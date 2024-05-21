@@ -2,7 +2,11 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import cors from 'cors';
+
 dotenv.config();
+
+console.log(process.env.SERVER_PORT);
 
 import {
   getUsers,
@@ -20,6 +24,12 @@ import {
 } from './database.js';
 
 const app = express();
+
+app.use(
+  cors({
+    origin: 'http://127.0.0.1:5500',
+  })
+);
 
 app.use(express.json());
 
@@ -55,10 +65,11 @@ function authToken(req, res, next) {
   if (token === null) return res.sendStatus(403);
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+    if (err) return res.sendStatus(403).send('unauthorized');
     // req.user = user;
     next();
   });
+  return;
 }
 
 // GET REQUESTS
@@ -70,14 +81,14 @@ app.get('/students', authToken, async (req, res) => {
 });
 
 // Get user
-app.get('/users/:id', async (req, res) => {
+app.get('/users/:id', authToken, async (req, res) => {
   const id = req.params.id;
   const user = await getUser(id);
   res.send(user);
 });
 
 // Get student
-app.get('/students/:id', async (req, res) => {
+app.get('/students/:id', authToken, async (req, res) => {
   const id = req.params.id;
   const student = await getStudent(id);
   res.send(student);
@@ -89,8 +100,6 @@ app.get('/students/:id', async (req, res) => {
 // Add user
 app.post('/users', async (req, res) => {
   const hashedPassword = await bcrypt.hash(req.body.pass, 10);
-  res.send(hashedPassword);
-  console.log("users added successful");
   const { fname, lname, email, phone, user } = req.body;
 
   const addedUser = await addUser(
@@ -101,7 +110,7 @@ app.post('/users', async (req, res) => {
     user,
     hashedPassword
   );
-  res.statusCode.send(200);
+  res.status(200);
   res.send('User created');
 });
 // -----------------------------------------------------------------------------------
@@ -109,27 +118,28 @@ app.post('/users', async (req, res) => {
 // DELETE REQUEST
 
 // Delete user
-app.delete('/users/:id',authToken, async (req, res) => {
+app.delete('/users/:id', async (req, res) => {
   const id = req.params.id;
   const deletedUser = await deleteUser(id);
   res.send('User deleted');
 });
 
 // Delete student
-app.delete('/students/:id',authToken, async (req, res) => {
+app.delete('/students/:id', authToken, async (req, res) => {
   const id = req.params.id;
   const deletedStudent = await deleteStudent(id);
   res.send('Student deleted');
 });
 // ------------------------------------------------------------------------------------
-
-app.put('/students/:id',authToken, async (req, res) => {
+// PUT REQUEST
+// Update student
+app.put('/students/:id', authToken, async (req, res) => {
   const id = req.params.id;
   const { fname, lname } = req.body;
   const updatedStudent = updateStudent(fname, lname, id);
   res.send('Student updated');
 });
 
-app.listen(2007, function () {
-  console.log('App listening on port 2007');
+app.listen(process.env.SERVER_PORT, function () {
+  console.log(`App listening on port ${process.env.SERVER_PORT}`);
 });

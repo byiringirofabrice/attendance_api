@@ -1,11 +1,23 @@
 import mysql from 'mysql2';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// const pool = mysql
+//   .createPool({
+//     host: 'localhost',
+//     database: 'attendance',
+//     user: 'root',
+//     password: '',
+//   })
+//   .promise();
 
 const pool = mysql
   .createPool({
-    host: '127.0.0.1',
-    database: 'attendance',
-    user: 'root',
-    password: '',
+    host: process.env.HOST,
+    database: process.env.DB,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
   })
   .promise();
 
